@@ -9,6 +9,8 @@ const player = ref<{
   goLive: () => void;
 } | null>(null);
 let stream: EventSource | undefined;
+let streamReconnecting = false;
+let streamDisposed = false;
 
 const { data: recording, error } = await useAsyncData(
   `recording-${route.params.sessionId}`,
@@ -20,19 +22,38 @@ const isLive = computed(() => {
 });
 useHead({ title: computed(() => `Gravação ${String(route.params.sessionId).slice(-6).toUpperCase()}`) });
 
+function connectStream() {
+  if (!recording.value) return;
+  stream?.close();
+  stream = new EventSource(
+    `${config.public.apiBase}/sites/${route.params.id}/recordings/${route.params.sessionId}/stream?after=${recording.value.lastSequence}`,
+    { withCredentials: true }
+  );
+  stream.addEventListener("events", (event) => {
+    const batch = JSON.parse((event as MessageEvent).data);
+    player.value?.addEvents(batch.events);
+  });
+  stream.onerror = async () => {
+    if (streamReconnecting || streamDisposed) return;
+    streamReconnecting = true;
+    stream?.close();
+    try {
+      await request("/auth/me");
+      if (!streamDisposed) window.setTimeout(connectStream, 1_000);
+    } finally {
+      streamReconnecting = false;
+    }
+  };
+}
+
 onMounted(async () => {
   await request(`/sites/${route.params.id}/recordings/${route.params.sessionId}`, { method: "PATCH", body: { watched: true } });
-  if (isLive.value && recording.value) {
-    stream = new EventSource(
-      `${config.public.apiBase}/sites/${route.params.id}/recordings/${route.params.sessionId}/stream?after=${recording.value.lastSequence}`
-    );
-    stream.addEventListener("events", (event) => {
-      const batch = JSON.parse((event as MessageEvent).data);
-      player.value?.addEvents(batch.events);
-    });
-  }
+  if (isLive.value && recording.value) connectStream();
 });
-onBeforeUnmount(() => stream?.close());
+onBeforeUnmount(() => {
+  streamDisposed = true;
+  stream?.close();
+});
 
 async function toggleFavorite() {
   if (!recording.value) return;

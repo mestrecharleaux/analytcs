@@ -9,6 +9,8 @@ const dates = reactive(dateDefaults());
 const filters = reactive({ status: "all", device: "all", browser: "all" });
 const liveRecordings = ref<Recording[]>([]);
 let liveSource: EventSource | undefined;
+let liveReconnecting = false;
+let liveDisposed = false;
 
 const { data: recordings, refresh, status, error } = await useAsyncData(
   `recordings-${route.params.id}`,
@@ -33,13 +35,35 @@ function formatDuration(value: number) {
   return `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
-onMounted(() => {
-  liveSource = new EventSource(`${config.public.apiBase}/sites/${route.params.id}/recordings/live`);
+function connectLiveSource() {
+  liveSource?.close();
+  liveSource = new EventSource(
+    `${config.public.apiBase}/sites/${route.params.id}/recordings/live`,
+    { withCredentials: true }
+  );
   liveSource.addEventListener("live", (event) => {
     liveRecordings.value = JSON.parse((event as MessageEvent).data);
   });
+  liveSource.onerror = async () => {
+    if (liveReconnecting || liveDisposed) return;
+    liveReconnecting = true;
+    liveSource?.close();
+    try {
+      await request("/auth/me");
+      if (!liveDisposed) window.setTimeout(connectLiveSource, 1_000);
+    } finally {
+      liveReconnecting = false;
+    }
+  };
+}
+
+onMounted(() => {
+  connectLiveSource();
 });
-onBeforeUnmount(() => liveSource?.close());
+onBeforeUnmount(() => {
+  liveDisposed = true;
+  liveSource?.close();
+});
 </script>
 
 <template>
