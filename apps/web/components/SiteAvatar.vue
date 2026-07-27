@@ -5,7 +5,7 @@ defineProps<{ site: Pick<Site, "name" | "icon" | "avatarColor">; size?: "sm" | "
 </script>
 
 <template>
-  <span class="site-avatar" :class="size || 'md'" :style="{ background: site.icon ? '#fff' : site.avatarColor }">
+  <span class="site-avatar" :class="size || 'md'" :style="{ background: site.icon ? '' : site.avatarColor }">
     <img v-if="site.icon" :src="site.icon" :alt="`Ícone de ${site.name}`" />
     <span v-else>{{ initials(site.name) }}</span>
   </span>

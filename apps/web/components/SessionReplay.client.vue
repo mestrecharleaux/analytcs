@@ -9,14 +9,41 @@ const currentTime = ref(0);
 const duration = ref(0);
 let replayer: Replayer | undefined;
 let timer: ReturnType<typeof setInterval> | undefined;
+let resizeObserver: ResizeObserver | undefined;
+let recordedWidth = 0;
+let recordedHeight = 0;
 
 function formatTime(value: number) {
   const seconds = Math.max(0, Math.floor(value / 1000));
   return `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
+function fitReplay() {
+  if (!root.value || !recordedWidth || !recordedHeight) return;
+  const wrapper = root.value.querySelector<HTMLElement>(".replayer-wrapper");
+  if (!wrapper) return;
+
+  const availableWidth = root.value.clientWidth;
+  const availableHeight = root.value.clientHeight;
+  const scale = Math.min(availableWidth / recordedWidth, availableHeight / recordedHeight);
+
+  wrapper.style.width = `${recordedWidth}px`;
+  wrapper.style.height = `${recordedHeight}px`;
+  wrapper.style.position = "absolute";
+  wrapper.style.left = "50%";
+  wrapper.style.top = "50%";
+  wrapper.style.transformOrigin = "center center";
+  wrapper.style.transform = `translate(-50%, -50%) scale(${scale})`;
+}
+
 function init() {
   if (!root.value || props.events.length < 2) return;
+  const meta = props.events.find(
+    (event) => typeof event.data?.width === "number" && typeof event.data?.height === "number"
+  );
+  recordedWidth = meta?.data.width || 0;
+  recordedHeight = meta?.data.height || 0;
+
   replayer = new Replayer(props.events as any, {
     root: root.value,
     liveMode: Boolean(props.live),
@@ -25,6 +52,14 @@ function init() {
     UNSAFE_replayCanvas: false
   } as any);
   const api = replayer as any;
+  api.on?.("resize", ({ width, height }: { width: number; height: number }) => {
+    recordedWidth = width;
+    recordedHeight = height;
+    requestAnimationFrame(fitReplay);
+  });
+  resizeObserver = new ResizeObserver(fitReplay);
+  resizeObserver.observe(root.value);
+  requestAnimationFrame(fitReplay);
   duration.value = api.getMetaData?.().totalTime || 0;
   if (props.live) api.startLive?.(Date.now());
   else api.play?.();
@@ -71,6 +106,7 @@ defineExpose({ addEvents, goLive });
 onMounted(init);
 onBeforeUnmount(() => {
   if (timer) clearInterval(timer);
+  resizeObserver?.disconnect();
   (replayer as any)?.pause?.();
 });
 </script>

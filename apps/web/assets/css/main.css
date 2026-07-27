@@ -786,8 +786,8 @@ tbody tr:hover {
 .sidebar-collapse-button {
   position: absolute;
   z-index: 2;
-  top: 22px;
-  right: -14px;
+  top: 5px;
+  right: -3px;
   width: 28px;
   height: 28px;
   display: inline-flex;
@@ -801,6 +801,8 @@ tbody tr:hover {
   box-shadow: 0 8px 22px -10px rgba(15, 23, 34, 0.9);
   cursor: pointer;
   transition: 180ms var(--ease);
+  border: none;
+  background: transparent;
 }
 
 .sidebar-collapse-button:hover {
@@ -1996,13 +1998,9 @@ progress::-webkit-progress-value {
   background: #0b111b;
 }
 
-.session-replay-stage > div:not(.empty-state) {
-  width: 100%;
-  height: 100%;
-}
-
 .session-replay-stage .replayer-wrapper {
-  transform-origin: top left;
+  max-width: none;
+  max-height: none;
 }
 
 .session-replay-stage .empty-state {
@@ -2368,4 +2366,7 @@ progress::-webkit-progress-value {
   .session-replay-controls select {
     display: none;
   }
+}
+.site-sidebar{
+  overflow-x: hidden !important;
 }
