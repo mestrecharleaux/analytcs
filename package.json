@@ -1,0 +1,20 @@
+{
+  "name": "akros-pulse",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c magenta,cyan \"npm run dev -w @akros/api\" \"npm run dev -w @akros/web\"",
+    "build": "npm run build -w @akros/api && npm run build -w @akros/web",
+    "test": "npm run test -w @akros/api",
+    "start": "concurrently -n api,web -c magenta,cyan \"npm run start -w @akros/api\" \"npm run preview -w @akros/web\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  }
+}
