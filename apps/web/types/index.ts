@@ -69,3 +69,32 @@ export type RecordingDetails = {
   lastSequence: number;
   events: Array<Record<string, any>>;
 };
+
+export type AuthUser = {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string | null;
+  fixed: boolean;
+  mfaEnabled: boolean;
+  mfaDevices: Array<{ id: string; name: string; createdAt: string }>;
+  permissions: string[];
+};
+
+export type AdminGroup = {
+  _id: string;
+  name: string;
+  permissions: string[];
+  fixed: boolean;
+  userCount?: number;
+};
+
+export type AdminUser = {
+  _id: string;
+  name: string;
+  email: string;
+  avatar?: string | null;
+  active: boolean;
+  fixed: boolean;
+  groups: Array<AdminGroup | string>;
+};

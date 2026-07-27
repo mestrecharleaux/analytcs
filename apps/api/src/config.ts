@@ -25,6 +25,11 @@ export const config = z
     REDIS_URL: z.string().default("redis://localhost:6379"),
     TRUST_PROXY: booleanString,
     COLLECTOR_ALLOW_ANY_ORIGIN: booleanString,
+    JWT_SECRET: z.string().min(32).default("dev-only-change-this-jwt-secret-32chars"),
+    JWT_TTL_SECONDS: z.coerce.number().int().positive().default(900),
+    AUTH_SESSION_TTL_DAYS: z.coerce.number().int().positive().default(30),
+    BOOTSTRAP_ADMIN_EMAIL: z.string().email().default("admin@akros.local"),
+    BOOTSTRAP_ADMIN_PASSWORD: z.string().min(8).default("ChangeMe123!"),
     IP_RETENTION_DAYS: z.coerce.number().int().positive().default(90),
     REPLAY_RETENTION_DAYS: z.coerce.number().int().positive().default(30),
     CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(90)

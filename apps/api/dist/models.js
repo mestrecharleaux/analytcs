@@ -86,8 +86,40 @@ const replayChunkSchema = new Schema({
 }, { timestamps: true });
 replayChunkSchema.index({ siteId: 1, sessionId: 1, sequence: 1 }, { unique: true });
 replayChunkSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+const userSchema = new Schema({
+    name: { type: String, required: true, trim: true, maxlength: 120 },
+    email: { type: String, required: true, unique: true, index: true, lowercase: true, trim: true },
+    passwordHash: { type: String, required: true },
+    avatar: { type: String, default: null },
+    active: { type: Boolean, default: true },
+    fixed: { type: Boolean, default: false },
+    groups: [{ type: Schema.Types.ObjectId, ref: "Group" }],
+    mfaDevices: [{
+            name: { type: String, required: true, trim: true },
+            secret: { type: String, required: true },
+            createdAt: { type: Date, default: Date.now }
+        }]
+}, { timestamps: true });
+const groupSchema = new Schema({
+    name: { type: String, required: true, unique: true, trim: true, maxlength: 120 },
+    permissions: [{ type: String, required: true, trim: true }],
+    fixed: { type: Boolean, default: false }
+}, { timestamps: true });
+const authSessionSchema = new Schema({
+    sessionToken: { type: String, required: true, unique: true, index: true },
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    refreshTokenHash: { type: String, required: true },
+    userAgent: { type: String, default: "" },
+    ip: { type: String, default: "" },
+    expiresAt: { type: Date, required: true, index: true },
+    lastSeenAt: { type: Date, required: true },
+    invalidatedAt: { type: Date, default: null, index: true }
+}, { timestamps: true });
 export const Site = mongoose.model("Site", siteSchema);
 export const Campaign = mongoose.model("Campaign", campaignSchema);
 export const Session = mongoose.model("Session", sessionSchema);
 export const PageView = mongoose.model("PageView", pageViewSchema);
 export const ReplayChunk = mongoose.model("ReplayChunk", replayChunkSchema);
+export const User = mongoose.model("User", userSchema);
+export const Group = mongoose.model("Group", groupSchema);
+export const AuthSession = mongoose.model("AuthSession", authSessionSchema);

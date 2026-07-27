@@ -1,6 +1,25 @@
+let refreshPromise: Promise<unknown> | null = null;
+
 export function useApi() {
   const config = useRuntimeConfig();
-  const request = $fetch.create({ baseURL: config.public.apiBase });
+  const raw = $fetch.create({
+    baseURL: config.public.apiBase,
+    credentials: "include",
+    headers: import.meta.server ? useRequestHeaders(["cookie"]) : undefined
+  });
+  const request = async <T = unknown>(url: string, options: Record<string, any> = {}) => {
+    try {
+      return await raw<T>(url, options);
+    } catch (error: any) {
+      const cannotRefresh = url === "/auth/login" || url === "/auth/refresh";
+      if (error?.response?.status !== 401 || cannotRefresh) throw error;
+      refreshPromise ||= raw("/auth/refresh", { method: "POST" }).finally(() => {
+        refreshPromise = null;
+      });
+      await refreshPromise;
+      return raw<T>(url, options);
+    }
+  };
   return { request };
 }
 

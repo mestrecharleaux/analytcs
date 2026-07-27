@@ -4,6 +4,7 @@ import type { Site } from "~/types";
 const props = defineProps<{ site: Site }>();
 const collapsed = defineModel<boolean>("collapsed", { default: true });
 const route = useRoute();
+const { user } = useAuth();
 const links = computed(() => [
   { label: "Visão geral", icon: "chart", section: "Análise", to: `/sites/${route.params.id}` },
   { label: "Gravações", icon: "recording", badge: "LIVE", to: `/sites/${route.params.id}/recordings` },
@@ -53,7 +54,7 @@ function isActive(to: string) {
     </nav>
     <div class="sidebar-foot">
       <NuxtLink to="/" title="Todos os sites"><AppIcon name="sites" /><b>Todos os sites</b></NuxtLink>
-      <div class="sidebar-user"><span>LA</span><div><strong>Lucas Andrade</strong><small>Administrador</small></div></div>
+      <div class="sidebar-user"><span><img v-if="user?.avatar" :src="user.avatar" alt="" />{{ user?.avatar ? "" : initials(user?.name) }}</span><div><strong>{{ user?.name }}</strong><small>Usuário autenticado</small></div></div>
     </div>
   </aside>
 </template>

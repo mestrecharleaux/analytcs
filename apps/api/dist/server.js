@@ -1,8 +1,10 @@
 import { app } from "./app.js";
+import { ensureBootstrapAuth } from "./auth/service.js";
 import { config } from "./config.js";
 import { connectDataStores, disconnectDataStores } from "./db.js";
 import { detailedLogging, logger } from "./logger.js";
 await connectDataStores();
+await ensureBootstrapAuth();
 const server = app.listen(config.PORT, () => {
     logger.info({
         server: {

@@ -1,7 +1,9 @@
 import { nanoid } from "nanoid";
+import { ensureBootstrapAuth } from "./auth/service.js";
 import { connectDataStores, disconnectDataStores } from "./db.js";
 import { Campaign, PageView, Session, Site } from "./models.js";
 await connectDataStores();
+await ensureBootstrapAuth();
 let site = await Site.findOne({ domains: "akros.com.br" });
 if (!site) {
     site = await Site.create({
