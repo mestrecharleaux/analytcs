@@ -5,7 +5,7 @@ import { z } from "zod";
 import { redis } from "../db.js";
 import { User } from "../models.js";
 import { requireAuth, requirePermission } from "./middleware.js";
-import { clearAuthCookies, createAuthSession, hashPassword, invalidateSession, rotateRefreshToken, verifyPassword } from "./service.js";
+import { clearAuthCookies, clearMfaChallenge, createAuthSession, createMfaChallenge, hashPassword, invalidateSession, rotateRefreshToken, verifyMfaChallenge, verifyPassword } from "./service.js";
 export const authRouter = Router();
 const publicUser = (user, permissions = []) => ({
     id: String(user._id),
@@ -25,20 +25,40 @@ authRouter.post("/login", async (req, res, next) => {
     try {
         const input = z.object({
             email: z.string().email(),
-            password: z.string().min(1),
-            code: z.string().regex(/^\d{6}$/).optional()
+            password: z.string().min(1)
         }).parse(req.body);
         const user = await User.findOne({ email: input.email.toLowerCase(), active: true });
         if (!user || !(await verifyPassword(input.password, user.passwordHash))) {
             return res.status(401).json({ error: "Email ou senha inválidos." });
         }
         if (user.mfaDevices.length) {
-            if (!input.code)
-                return res.status(428).json({ error: "Código MFA necessário.", mfaRequired: true });
-            const checks = await Promise.all(user.mfaDevices.map((device) => verify({ secret: device.secret, token: input.code })));
-            if (!checks.some((result) => result.valid))
-                return res.status(401).json({ error: "Código MFA inválido." });
+            await createMfaChallenge(String(user._id), res);
+            return res.status(428).json({ error: "Código MFA necessário.", mfaRequired: true });
         }
+        await createAuthSession(String(user._id), req, res);
+        res.json({ user: publicUser(user) });
+    }
+    catch (error) {
+        next(error);
+    }
+});
+authRouter.post("/login/mfa", async (req, res, next) => {
+    try {
+        const input = z.object({ code: z.string().regex(/^\d{6}$/) }).parse(req.body);
+        const userId = await verifyMfaChallenge(req);
+        if (!userId) {
+            clearMfaChallenge(res);
+            return res.status(401).json({ error: "Desafio MFA inválido ou expirado." });
+        }
+        const user = await User.findOne({ _id: userId, active: true });
+        if (!user?.mfaDevices.length) {
+            clearMfaChallenge(res);
+            return res.status(401).json({ error: "MFA não está disponível para este usuário." });
+        }
+        const checks = await Promise.all(user.mfaDevices.map((device) => verify({ secret: device.secret, token: input.code })));
+        if (!checks.some((result) => result.valid))
+            return res.status(401).json({ error: "Código MFA inválido." });
+        clearMfaChallenge(res);
         await createAuthSession(String(user._id), req, res);
         res.json({ user: publicUser(user) });
     }

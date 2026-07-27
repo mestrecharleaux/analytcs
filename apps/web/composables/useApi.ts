@@ -11,7 +11,7 @@ export function useApi() {
     try {
       return await raw<T>(url, options);
     } catch (error: any) {
-      const cannotRefresh = url === "/auth/login" || url === "/auth/refresh";
+      const cannotRefresh = url === "/auth/login" || url === "/auth/login/mfa" || url === "/auth/refresh";
       if (error?.response?.status !== 401 || cannotRefresh) throw error;
       refreshPromise ||= raw("/auth/refresh", { method: "POST" }).finally(() => {
         refreshPromise = null;

@@ -10,6 +10,7 @@ import { requestIp } from "../services/tracking.js";
 
 const accessCookie = "akros_access";
 const refreshCookie = "akros_refresh";
+const mfaChallengeCookie = "akros_mfa_challenge";
 const redisTtl = 3600;
 const jwtSecret = new TextEncoder().encode(config.JWT_SECRET);
 
@@ -29,6 +30,38 @@ export function clearAuthCookies(res: Response) {
   const options = { httpOnly: true, secure: config.NODE_ENV === "production", sameSite: "lax" as const, path: "/" };
   res.clearCookie(accessCookie, options);
   res.clearCookie(refreshCookie, options);
+  res.clearCookie(mfaChallengeCookie, options);
+}
+
+export async function createMfaChallenge(userId: string, res: Response) {
+  const token = await new SignJWT({ purpose: "mfa-login" })
+    .setProtectedHeader({ alg: "HS256" })
+    .setSubject(userId)
+    .setJti(nanoid())
+    .setIssuedAt()
+    .setExpirationTime("5m")
+    .sign(jwtSecret);
+  res.cookie(mfaChallengeCookie, token, cookieOptions(5 * 60 * 1000));
+}
+
+export async function verifyMfaChallenge(req: Request) {
+  const token = req.cookies?.[mfaChallengeCookie] as string | undefined;
+  if (!token) return null;
+  try {
+    const { payload } = await jwtVerify(token, jwtSecret);
+    return payload.purpose === "mfa-login" && typeof payload.sub === "string" ? payload.sub : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearMfaChallenge(res: Response) {
+  res.clearCookie(mfaChallengeCookie, {
+    httpOnly: true,
+    secure: config.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/"
+  });
 }
 
 function hashToken(value: string) {

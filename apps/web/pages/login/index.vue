@@ -4,8 +4,7 @@ useHead({ title: "Entrar" });
 const route = useRoute();
 const { request } = useApi();
 const { user } = useAuth();
-const form = reactive({ email: "", password: "", code: "" });
-const mfaRequired = ref(false);
+const form = reactive({ email: "", password: "" });
 const loading = ref(false);
 const error = ref("");
 
@@ -15,13 +14,18 @@ async function login() {
   try {
     const result = await request<{ user: any }>("/auth/login", {
       method: "POST",
-      body: { email: form.email, password: form.password, ...(mfaRequired.value ? { code: form.code } : {}) }
+      body: { email: form.email, password: form.password }
     });
     user.value = result.user;
     await useAuth().load();
     await navigateTo(typeof route.query.redirect === "string" ? route.query.redirect : "/");
   } catch (cause: any) {
-    if (cause?.response?.status === 428) mfaRequired.value = true;
+    if (cause?.response?.status === 428) {
+      await navigateTo(`/login/mfa?redirect=${encodeURIComponent(
+        typeof route.query.redirect === "string" ? route.query.redirect : "/"
+      )}`);
+      return;
+    }
     error.value = cause?.data?.error || "Não foi possível autenticar.";
   } finally {
     loading.value = false;
@@ -37,7 +41,6 @@ async function login() {
       <form class="stack-form" @submit.prevent="login">
         <label>Email<input v-model="form.email" required type="email" autocomplete="username" /></label>
         <label>Senha<input v-model="form.password" required type="password" autocomplete="current-password" /></label>
-        <label v-if="mfaRequired">Código do autenticador<input v-model="form.code" required inputmode="numeric" maxlength="6" pattern="[0-9]{6}" /></label>
         <p v-if="error" class="form-error">{{ error }}</p>
         <button class="button primary" :disabled="loading">{{ loading ? "Entrando…" : "Entrar" }}</button>
       </form>
