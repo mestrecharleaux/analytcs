@@ -1,14 +1,13 @@
 <script setup lang="ts">
 const route = useRoute();
 const { request } = useApi();
-const dates = reactive(dateDefaults());
+const { dates, applyDateRange } = useSiteDateRange(String(route.params.id));
 const { data: dashboard, refresh } = await useAsyncData(`campaign-dashboard-${route.params.campaignId}`, () =>
   request<any>(`/sites/${route.params.id}/campaigns/${route.params.campaignId}/dashboard`, { query: dates })
 );
 useHead({ title: computed(() => dashboard.value?.campaign?.name || "Dashboard da campanha") });
 function applyDates(start: string, end: string) {
-  Object.assign(dates, { start, end });
-  refresh();
+  if (applyDateRange(start, end)) refresh();
 }
 </script>
 

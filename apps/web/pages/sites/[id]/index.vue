@@ -4,7 +4,7 @@ import type { Dashboard } from "~/types";
 useHead({ title: "Visão geral" });
 const route = useRoute();
 const { request } = useApi();
-const dates = reactive(dateDefaults());
+const { dates, applyDateRange } = useSiteDateRange(String(route.params.id));
 const selectedKey = ref<string | null>(null);
 const queryValues = ref<Array<{ value: string; count: number }>>([]);
 const valuesLoading = ref(false);
@@ -16,9 +16,7 @@ const { data: dashboard, refresh, status, error } = await useAsyncData(
 );
 
 function applyDates(start: string, end: string) {
-  dates.start = start;
-  dates.end = end;
-  refresh();
+  if (applyDateRange(start, end)) refresh();
 }
 
 async function openKey(key: string) {

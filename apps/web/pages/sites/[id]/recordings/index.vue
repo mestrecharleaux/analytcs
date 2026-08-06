@@ -5,7 +5,7 @@ useHead({ title: "Gravações" });
 const route = useRoute();
 const config = useRuntimeConfig();
 const { request } = useApi();
-const dates = reactive(dateDefaults());
+const { dates, applyDateRange } = useSiteDateRange(String(route.params.id));
 const filters = reactive({ status: "all", device: "all", browser: "all" });
 const liveRecordings = ref<Recording[]>([]);
 let liveSource: EventSource | undefined;
@@ -22,8 +22,7 @@ const completed = computed(() => recordings.value.filter((recording) => !recordi
 const totalEvents = computed(() => recordings.value.reduce((sum, recording) => sum + recording.eventCount, 0));
 
 function applyDates(start: string, end: string) {
-  Object.assign(dates, { start, end });
-  refresh();
+  if (applyDateRange(start, end)) refresh();
 }
 
 function applyFilters() {
