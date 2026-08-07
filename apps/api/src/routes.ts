@@ -134,7 +134,8 @@ apiRouter.get("/sites/:siteId/recordings", async (req, res, next) => {
     const query = period.extend({
       status: z.string().optional(),
       device: z.string().optional(),
-      browser: z.string().optional()
+      browser: z.string().optional(),
+      favorite: z.enum(["true", "false"]).transform((value) => value === "true").optional()
     }).parse(req.query);
     const site = await Site.findById(req.params.siteId).select("timezone").lean();
     if (!site) return res.status(404).json({ error: "Site não encontrado." });
@@ -144,7 +145,8 @@ apiRouter.get("/sites/:siteId/recordings", async (req, res, next) => {
       endExclusive: window.endExclusive,
       status: query.status,
       device: query.device,
-      browser: query.browser
+      browser: query.browser,
+      favorite: query.favorite
     });
     res.json(recordings);
   } catch (error) {

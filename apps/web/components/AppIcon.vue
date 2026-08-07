@@ -42,6 +42,7 @@ withDefaults(defineProps<{ name: string; size?: number; strokeWidth?: number }>(
     <template v-else-if="name === 'arrow'"><path d="m9 18 6-6-6-6" /></template>
     <template v-else-if="name === 'plus'"><path d="M12 5v14M5 12h14" /></template>
     <template v-else-if="name === 'filter'"><path d="M4 5h16l-6 7v5l-4 2v-7z" /></template>
+    <template v-else-if="name === 'star'"><path d="m12 3 2.75 5.57 6.15.9-4.45 4.33 1.05 6.12L12 17.03l-5.5 2.89 1.05-6.12L3.1 9.47l6.15-.9L12 3Z" /></template>
     <template v-else-if="name === 'moon'"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z" /></template>
     <template v-else-if="name === 'sun'">
       <circle cx="12" cy="12" r="4" />

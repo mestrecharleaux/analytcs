@@ -67,7 +67,7 @@ async function toggleFavorite() {
   <SiteFrame>
     <header class="page-heading">
       <div><NuxtLink class="back-link inline" :to="`/sites/${route.params.id}/recordings`">← Gravações</NuxtLink><span class="eyebrow">{{ isLive ? "Sessão ao vivo" : "Reprodução de sessão" }}</span><h1>Visitante {{ String(route.params.sessionId).slice(-6).toUpperCase() }}</h1><p v-if="recording">{{ recording.session.location?.city || "Local desconhecido" }} · {{ recording.session.deviceType }} · {{ recording.session.browser?.name }}</p></div>
-      <button v-if="recording" class="button subtle" @click="toggleFavorite">{{ recording.session.recordingFavorite ? "★ Favorita" : "☆ Favoritar" }}</button>
+      <button v-if="recording" class="button subtle replay-favorite-button" :class="{ active: recording.session.recordingFavorite }" @click="toggleFavorite"><AppIcon name="star" :size="18" />{{ recording.session.recordingFavorite ? "Favorita" : "Favoritar" }}</button>
     </header>
     <div v-if="error" class="empty-state danger">{{ error.message }}</div>
     <section v-else-if="recording" class="replay-layout">

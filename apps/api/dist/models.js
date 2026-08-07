@@ -60,6 +60,7 @@ const sessionSchema = new Schema({
 }, { timestamps: true });
 sessionSchema.index({ siteId: 1, sessionId: 1 }, { unique: true });
 sessionSchema.index({ siteId: 1, startedAt: -1 });
+sessionSchema.index({ siteId: 1, recordingFavorite: 1, recordingLastEventAt: -1 });
 const pageViewSchema = new Schema({
     siteId: { type: Schema.Types.ObjectId, ref: "Site", required: true, index: true },
     sessionId: { type: String, required: true, index: true },

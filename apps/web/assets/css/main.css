@@ -2056,7 +2056,37 @@ progress::-webkit-progress-value {
 
 .recording-filter-row {
   display: flex;
+  align-items: center;
   gap: 8px;
+}
+
+.favorite-filter-button.active,
+.recording-favorite-button.active,
+.replay-favorite-button.active {
+  color: #d89a22;
+  border-color: color-mix(in srgb, #d89a22 48%, var(--border));
+  background: color-mix(in srgb, #d89a22 12%, var(--surface));
+}
+
+.favorite-filter-button.active .app-icon,
+.recording-favorite-button.active .app-icon,
+.replay-favorite-button.active .app-icon {
+  fill: currentColor;
+}
+
+.recording-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.recording-favorite-button {
+  flex: 0 0 auto;
+}
+
+.replay-favorite-button {
+  gap: 7px;
 }
 
 .recording-filter-row select {

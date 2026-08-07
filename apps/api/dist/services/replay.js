@@ -117,9 +117,12 @@ export async function collectReplay(payload, req) {
 export async function listRecordings(siteId, options) {
     const query = {
         siteId: new mongoose.Types.ObjectId(siteId),
-        recordingEventCount: { $gt: 0 },
-        startedAt: { $gte: options.start, $lt: options.endExclusive }
+        recordingEventCount: { $gt: 0 }
     };
+    if (options.favorite)
+        query.recordingFavorite = true;
+    else
+        query.startedAt = { $gte: options.start, $lt: options.endExclusive };
     if (options.device && options.device !== "all")
         query.deviceType = options.device;
     if (options.browser && options.browser !== "all")

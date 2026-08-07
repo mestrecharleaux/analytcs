@@ -131,13 +131,14 @@ export async function collectReplay(payload: ReplayPayload, req: Request) {
 
 export async function listRecordings(
   siteId: string,
-  options: { start: Date; endExclusive: Date; status?: string; device?: string; browser?: string }
+  options: { start: Date; endExclusive: Date; status?: string; device?: string; browser?: string; favorite?: boolean }
 ) {
   const query: Record<string, unknown> = {
     siteId: new mongoose.Types.ObjectId(siteId),
-    recordingEventCount: { $gt: 0 },
-    startedAt: { $gte: options.start, $lt: options.endExclusive }
+    recordingEventCount: { $gt: 0 }
   };
+  if (options.favorite) query.recordingFavorite = true;
+  else query.startedAt = { $gte: options.start, $lt: options.endExclusive };
   if (options.device && options.device !== "all") query.deviceType = options.device;
   if (options.browser && options.browser !== "all") query["browser.name"] = options.browser;
   if (options.status === "unwatched") query.recordingWatched = false;

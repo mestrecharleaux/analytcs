@@ -6,8 +6,9 @@ const route = useRoute();
 const config = useRuntimeConfig();
 const { request } = useApi();
 const { dates, applyDateRange } = useSiteDateRange(String(route.params.id));
-const filters = reactive({ status: "all", device: "all", browser: "all" });
+const filters = reactive({ status: "all", device: "all", browser: "all", favorite: false });
 const liveRecordings = ref<Recording[]>([]);
+const favoriteUpdating = ref<string | null>(null);
 let liveSource: EventSource | undefined;
 let liveReconnecting = false;
 let liveDisposed = false;
@@ -27,6 +28,28 @@ function applyDates(start: string, end: string) {
 
 function applyFilters() {
   refresh();
+}
+
+function toggleFavoriteFilter() {
+  filters.favorite = !filters.favorite;
+  refresh();
+}
+
+async function toggleFavorite(recording: Recording) {
+  if (favoriteUpdating.value) return;
+  favoriteUpdating.value = recording.sessionId;
+  try {
+    const result = await request<{ favorite: boolean }>(`/sites/${route.params.id}/recordings/${recording.sessionId}`, {
+      method: "PATCH",
+      body: { favorite: !recording.favorite }
+    });
+    recording.favorite = result.favorite;
+    if (filters.favorite && !result.favorite) {
+      recordings.value = recordings.value.filter((item) => item.sessionId !== recording.sessionId);
+    }
+  } finally {
+    favoriteUpdating.value = null;
+  }
 }
 
 function formatDuration(value: number) {
@@ -86,7 +109,7 @@ onBeforeUnmount(() => {
     </section>
 
     <section class="metric-grid recording-metrics">
-      <MetricCard label="Sessões gravadas" :value="formatNumber(recordings.length)" detail="no período selecionado" />
+      <MetricCard label="Sessões gravadas" :value="formatNumber(recordings.length)" :detail="filters.favorite ? 'favoritadas em qualquer período' : 'no período selecionado'" />
       <MetricCard label="Eventos reconstruídos" :value="formatNumber(totalEvents)" detail="DOM e interações" tone="#0ea5e9" />
       <MetricCard label="Com frustração" :value="formatNumber(recordings.filter(r => r.rageClicks).length)" detail="cliques repetidos" tone="#f97316" />
       <MetricCard label="Não assistidas" :value="formatNumber(recordings.filter(r => !r.watched).length)" detail="aguardando análise" tone="#d946ef" />
@@ -96,13 +119,22 @@ onBeforeUnmount(() => {
       <div class="recordings-toolbar-nuxt">
         <div><strong>Últimas gravações</strong><span>{{ completed.length }} sessões concluídas</span></div>
         <div class="recording-filter-row">
+          <button
+            class="icon-button favorite-filter-button"
+            :class="{ active: filters.favorite }"
+            type="button"
+            :aria-label="filters.favorite ? 'Exibir todas as gravações' : 'Exibir apenas favoritas'"
+            :aria-pressed="filters.favorite"
+            :title="filters.favorite ? 'Exibindo favoritas de qualquer período' : 'Filtrar gravações favoritas'"
+            @click="toggleFavoriteFilter"
+          ><AppIcon name="star" :size="18" /></button>
           <select v-model="filters.status" @change="applyFilters"><option value="all">Todas</option><option value="unwatched">Não assistidas</option><option value="rage">Com frustração</option></select>
           <select v-model="filters.device" @change="applyFilters"><option value="all">Todos os dispositivos</option><option>Computador</option><option>Celular</option><option>Tablet</option></select>
         </div>
       </div>
       <div v-if="status === 'pending'" class="empty-state">Carregando gravações…</div>
       <div v-else-if="error" class="empty-state danger">{{ error.message }}</div>
-      <div v-else-if="!completed.length" class="empty-state"><span class="empty-icon">◉</span><h2>Nenhuma gravação no período</h2><p>As sessões aparecerão após a instalação do script atualizado.</p></div>
+      <div v-else-if="!completed.length" class="empty-state"><span class="empty-icon">◉</span><h2>{{ filters.favorite ? "Nenhuma gravação favorita" : "Nenhuma gravação no período" }}</h2><p>{{ filters.favorite ? "Marque uma gravação com a estrela para encontrá-la aqui." : "As sessões aparecerão após a instalação do script atualizado." }}</p></div>
       <div v-else class="responsive-table">
         <table class="recording-table">
           <thead><tr><th>Visitante</th><th>Início</th><th>Jornada</th><th>Entrada</th><th>Sinais</th><th /></tr></thead>
@@ -113,7 +145,7 @@ onBeforeUnmount(() => {
               <td><strong>{{ recording.pages }} páginas</strong><small class="muted">{{ recording.eventCount }} eventos</small></td>
               <td><code>{{ recording.entryPage || "/" }}</code></td>
               <td><span v-if="recording.rageClicks" class="status-badge paused"><i />{{ recording.rageClicks }} cliques de raiva</span><span v-else class="muted">Sem frustração</span></td>
-              <td><NuxtLink class="button subtle" :to="`/sites/${route.params.id}/recordings/${recording.sessionId}`">Reproduzir ▶</NuxtLink></td>
+              <td><div class="recording-actions"><button class="icon-button recording-favorite-button" :class="{ active: recording.favorite }" type="button" :disabled="favoriteUpdating === recording.sessionId" :aria-label="recording.favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'" :title="recording.favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'" @click="toggleFavorite(recording)"><AppIcon name="star" :size="18" /></button><NuxtLink class="button subtle" :to="`/sites/${route.params.id}/recordings/${recording.sessionId}`">Reproduzir ▶</NuxtLink></div></td>
             </tr>
           </tbody>
         </table>
